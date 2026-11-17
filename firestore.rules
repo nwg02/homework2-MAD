@@ -1,0 +1,104 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validMessageText() {
+      return request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500;
+    }
+
+    function matchesProfileName() {
+      let profile = get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data;
+
+      return request.resource.data.authorName ==
+        profile.firstName + ' ' + profile.lastName;
+    }
+
+    // Private user profiles
+    match /users/{uid} {
+
+      allow get: if signedIn()
+        && request.auth.uid == uid;
+
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'firstName',
+          'lastName',
+          'role',
+          'registrationDateTime'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'firstName',
+          'lastName',
+          'role',
+          'registrationDateTime'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 60
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.lastName.size() <= 60
+        && request.resource.data.role == 'member'
+        && request.resource.data.registrationDateTime == request.time;
+
+      allow update, delete: if false;
+    }
+
+    // Shared message board
+    match /messages/{messageId} {
+
+      // All signed-in users can read messages.
+      allow read: if signedIn();
+
+      // Users may create messages under their own UID.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'text',
+          'authorUid',
+          'authorName',
+          'createdAt',
+          'editedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'text',
+          'authorUid',
+          'authorName',
+          'createdAt',
+          'editedAt'
+        ])
+        && request.resource.data.authorUid == request.auth.uid
+        && matchesProfileName()
+        && validMessageText()
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.editedAt == null;
+
+      // Only the author may edit text and editedAt.
+      allow update: if signedIn()
+        && resource.data.authorUid == request.auth.uid
+        && request.resource.data.diff(resource.data)
+             .affectedKeys().hasOnly(['text', 'editedAt'])
+        && validMessageText()
+        && request.resource.data.editedAt == request.time;
+
+      // Only the author may delete a message.
+      allow delete: if signedIn()
+        && resource.data.authorUid == request.auth.uid;
+    }
+  }
+}

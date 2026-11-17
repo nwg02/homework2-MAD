@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1089567288908",
+    "project_id": "message-board-hw2",
+    "storage_bucket": "message-board-hw2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089567288908:android:4e4c8252773cc42b398ee9",
+        "android_client_info": {
+          "package_name": "com.example.homework2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVEeC_MSyCuNk_eZDVlzw6sD0_rowG8jI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
